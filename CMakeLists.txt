@@ -17,8 +17,9 @@ add_executable(door_opener src/main.cpp)
 target_link_libraries(door_opener ${OpenCV_LIBS} Threads::Threads)
 
 add_custom_command(TARGET door_opener POST_BUILD
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/deploy_libs.sh 
-            $<TARGET_FILE:door_opener> 
-            $<TARGET_FILE_DIR:door_opener>/libs/
-    COMMENT "Running deployment script to bundle OpenCV libraries..."
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:door_opener>/libs
+    # This runs a small CMake script that copies libraries
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+            "$<TARGET_FILE:door_opener>" 
+            "$<TARGET_FILE_DIR:door_opener>/"
 )
