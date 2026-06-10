@@ -1,29 +1,24 @@
 cmake_minimum_required(VERSION 3.10)
-project(AutomaticDoorOpener CXX)
+project(ElectronicShieldDoor CXX)
 
-# Require C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find dependencies
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
 
-# Include directories
-include_directories(${OpenCV_INCLUDE_DIRS})
+if(UNIX AND NOT APPLE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/libs")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
 
-# Define the executable
 add_executable(door_opener src/main.cpp)
 
-# Link libraries
-target_link_libraries(door_opener 
-    ${OpenCV_LIBS} 
-    Threads::Threads
-)
+target_link_libraries(door_opener ${OpenCV_LIBS} Threads::Threads)
 
-# Optimize for performance (Crucial for your E-350)
-if(MSVC)
-    target_compile_options(door_opener PRIVATE /O2)
-else()
-    target_compile_options(door_opener PRIVATE -O3)
-endif()
+add_custom_command(TARGET door_opener POST_BUILD
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/deploy_libs.sh 
+            $<TARGET_FILE:door_opener> 
+            $<TARGET_FILE_DIR:door_opener>/libs/
+    COMMENT "Running deployment script to bundle OpenCV libraries..."
+)
