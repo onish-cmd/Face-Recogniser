@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
+#include <new>
 #include <opencv2/face.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -13,13 +14,15 @@
 #include <vector>
 
 struct FeaturesData {
-  std::mutex mtx;
-  std::condition_variable cv;
-  cv::Mat frame;
-  std::vector<cv::Rect> features;
+  alignas(std::hardware_destructive_interference_size) std::mutex mtx;
+  alignas(
+      std::hardware_destructive_interference_size) std::condition_variable cv;
   bool has_new_frame = false;
   bool quit = false;
-  std::atomic<double> last_confidence{0.0};
+  alignas(std::hardware_destructive_interference_size)
+      std::atomic<double> last_confidence{0.0};
+  cv::Mat frame;
+  std::vector<cv::Rect> features;
 };
 
 cv::Ptr<cv::face::LBPHFaceRecognizer> model =
