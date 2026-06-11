@@ -55,7 +55,7 @@ void processing_worker(FeaturesData &dataInstance,
       });
 
       if (dataInstance.quit) {
-        std::cout << "Exit.";
+        std::cout << "Exit." << std::endl;
         return;
       }
 
@@ -283,9 +283,16 @@ int main(int argc, char *argv[]) {
     cv::imshow(window_name, image);
     int key = cv::waitKey(10);
     if (key == 'q' || key == 'Q') {
-      dataInstance.quit = true;
+      {
+        std::lock_guard<std::mutex> lock(dataInstance.mtx);
+        dataInstance.quit = true;
+      }
       dataInstance.cv.notify_one();
-      worker.join();
+      if (worker.joinable()) {
+        worker.join();
+      } else {
+        std::cout << "Can't join!" << std::endl;
+      }
       std::_Exit(EXIT_SUCCESS);
     }
   }
