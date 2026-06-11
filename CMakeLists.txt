@@ -4,25 +4,17 @@ project(ElectronicShieldDoor CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Find OpenCV cleanly. vcpkg enforces CONFIG mode on Windows automatically.
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
 
 add_executable(door_opener src/main.cpp)
 
-# Cross-platform target linking adjustment
-if(WIN32)
-    target_link_libraries(door_opener PRIVATE 
-        OpenCV::opencv_core 
-        OpenCV::opencv_imgproc
-        OpenCV::opencv_videoio
-        OpenCV::opencv_highgui
-        OpenCV::opencv_objdetect
-        OpenCV::opencv_face
-        Threads::Threads
-    )
-else()
-    target_link_libraries(door_opener PRIVATE ${OpenCV_LIBS} Threads::Threads)
-endif()
+# Link using the unified variables that both vcpkg and apt-get populate perfectly
+target_link_libraries(door_opener PRIVATE 
+    ${OpenCV_LIBS} 
+    Threads::Threads
+)
 
 # Linux: Set RPATH for portable runtime loading
 if(UNIX AND NOT APPLE)
