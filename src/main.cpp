@@ -87,7 +87,7 @@ void processing_worker(FeaturesData &dataInstance,
 
         model->predict(resized_face, predicted_label, conf);
 
-        if (predicted_label == 1 && conf < 80.0) {
+        if (predicted_label == 1 && conf < 65.0) {
           verified_features.push_back(face_rect);
           flag_open_door = true;
           last_seen_time = std::chrono::steady_clock::now();
