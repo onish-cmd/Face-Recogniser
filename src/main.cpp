@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>
@@ -18,6 +19,7 @@ struct FeaturesData {
   std::vector<cv::Rect> features;
   bool has_new_frame = false;
   bool quit = false;
+  std::atomic<double> last_confidence{0.0};
 };
 
 cv::Ptr<cv::face::LBPHFaceRecognizer> model =
@@ -37,6 +39,8 @@ std::vector<int> training_labels;
 
 bool flag_open_door = false;
 float door_position = 0.0f;
+
+double minimum_confidence = 70.0;
 
 enum AppState { TRAINING_MODE, MODEL_TRAINING, RECOGNITION_MODE };
 
@@ -87,13 +91,14 @@ void processing_worker(FeaturesData &dataInstance,
 
         model->predict(resized_face, predicted_label, conf);
 
-        if (predicted_label == 1 && conf < 65.0) {
+        if (predicted_label == 1 && conf < 70.0) {
           verified_features.push_back(face_rect);
           flag_open_door = true;
           last_seen_time = std::chrono::steady_clock::now();
         } else {
           flag_open_door = false;
         }
+        dataInstance.last_confidence.store(conf);
       }
     }
     {
@@ -103,7 +108,8 @@ void processing_worker(FeaturesData &dataInstance,
   }
 }
 
-void drawDoorWindow(const std::string &win_name, AppState State) {
+void drawDoorWindow(const std::string &win_name, AppState State,
+                    std::string conf) {
   cv::Mat door_canvas = cv::Mat::zeros(400, 400, CV_8UC3);
 
   // 1. Calculate Delta Time (seconds elapsed since last frame)
@@ -198,6 +204,9 @@ void drawDoorWindow(const std::string &win_name, AppState State) {
       cv::putText(door_canvas, "STATUS: MOVING", cv::Point(110, 35),
                   cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
     }
+
+    cv::putText(door_canvas, "CONFIDENCE: " + conf, cv::Point(30, 390),
+                cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
   }
 
   cv::imshow(win_name, door_canvas);
@@ -262,7 +271,14 @@ int main(int argc, char *argv[]) {
       cv::rectangle(image, feature, cv::Scalar(0, 255, 0), 2);
     }
 
-    drawDoorWindow(door_window_name, State);
+    double live_conf = dataInstance.last_confidence.load();
+
+    double short_conf = std::trunc(live_conf * 100.0) / 100.0;
+
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2) << short_conf;
+
+    drawDoorWindow(door_window_name, State, ss.str());
 
     cv::imshow(window_name, image);
     int key = cv::waitKey(10);
