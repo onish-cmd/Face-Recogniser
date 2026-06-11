@@ -24,9 +24,19 @@ if(UNIX AND NOT APPLE)
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/copy_libs.cmake" "
+        execute_process(COMMAND ldd \${BIN} OUTPUT_VARIABLE ldd_output)
+        string(REPLACE \"\\n\" \";\" lines \"\${ldd_output}\")
+        foreach(line \${lines})
+            if(line MATCHES \"libopencv_.* => (/[^ ]+)\")
+                file(COPY \"\${CMAKE_MATCH_1}\" DESTINATION \"\${LIBS_DIR}\")
+            endif()
+        endforeach()
+    ")
+
     add_custom_command(TARGET door_opener POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:door_opener>/libs"
-        COMMAND bash -c "ldd $<TARGET_FILE:door_opener> | grep libopencv | awk '{print $$3}' | xargs -I {} cp -L {} $<TARGET_FILE_DIR:door_opener>/libs/"
+        COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:door_opener> -DLIBS_DIR=$<TARGET_FILE_DIR:door_opener>/libs -P "${CMAKE_CURRENT_BINARY_DIR}/copy_libs.cmake"
     )
 endif()
 
