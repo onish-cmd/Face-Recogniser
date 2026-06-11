@@ -27,12 +27,12 @@ jobs:
       - name: Configure and Build
         shell: bash
         env:
-          ACTIONS_CACHE_URL: ${{ env.ACTIONS_CACHE_URL }}
-          ACTIONS_RUNTIME_TOKEN: ${{ env.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || env.ACTIONS_CACHE_URL }}
+          ACTIONS_RUNTIME_TOKEN: ${{ secrets.ACTIONS_RUNTIME_TOKEN || env.ACTIONS_RUNTIME_TOKEN }}
+          # Force vcpkg to ONLY build Release binaries to save time
+          VCPKG_BUILD_TYPE: release
         run: |
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
-             # MSYS_NO_PATHCONV=1 forces Bash to leave our compiler flags alone!
-             # Also using -permissive- instead of /permissive- to double-insulate against parser issues
              MSYS_NO_PATHCONV=1 cmake -B build -S . \
                -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
                -DCMAKE_BUILD_TYPE=Release \
