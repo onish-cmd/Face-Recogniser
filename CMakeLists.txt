@@ -18,7 +18,6 @@ target_link_libraries(door_opener PRIVATE
     Threads::Threads
 )
 
-
 if(UNIX AND NOT APPLE)
     set_target_properties(door_opener PROPERTIES
         INSTALL_RPATH "$ORIGIN/libs"
@@ -27,29 +26,13 @@ if(UNIX AND NOT APPLE)
 
     add_custom_command(TARGET door_opener POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:door_opener>/libs"
-        COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/copy_linux_deps.cmake"
-        COMMENT "Resolving and copying OpenCV .so libraries to local libs/ folder..."
+        COMMAND bash -c "ldd $<TARGET_FILE:door_opener> | grep libopencv | awk '{print $$3}' | xargs -I {} cp -L {} $<TARGET_FILE_DIR:door_opener>/libs/"
     )
-
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/copy_linux_deps.cmake" "
-        file(GET_RUNTIME_DEPENDENCIES
-            EXECUTABLES \"$<TARGET_FILE:door_opener>\"
-            RESOLVED_DEPENDENCIES_VAR resolved_deps
-            UNRESOLVED_DEPENDENCIES_VAR unresolved_deps
-        )
-        foreach(file \${resolved_deps})
-            # Only isolate the OpenCV libraries, leave core system glibc alone
-            if(file MATCHES \"libopencv\")
-                file(COPY \${file} DESTINATION \"$<TARGET_FILE_DIR:door_opener>/libs\")
-            endif()
-        endforeach()
-    ")
 endif()
 
 if(WIN32)
     add_custom_command(TARGET door_opener POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy -t "$<TARGET_FILE_DIR:door_opener>" "$<TARGET_RUNTIME_DLLS:door_opener>"
         COMMAND_EXPAND_LISTS
-        COMMENT "Deploying runtime DLL dependencies..."
     )
 endif()
