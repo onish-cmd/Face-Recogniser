@@ -2,7 +2,13 @@
   "name": "electronic-shield-door",
   "version": "1.0.0",
   "dependencies": [
-    "opencv4[contrib,directml,thread]",
-    "threads"
+    {
+      "name": "opencv4",
+      "features": [
+        "contrib",
+        "directml",
+        "thread"
+      ]
+    }
   ]
 }
