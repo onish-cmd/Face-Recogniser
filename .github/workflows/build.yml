@@ -50,5 +50,6 @@ jobs:
           path: |
             build/Release/
             build/door_opener
+            build/libs/
           if-no-files-found: warn
           
