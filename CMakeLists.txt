@@ -1,54 +1,48 @@
-cmake_minimum_required(VERSION 3.21)
-project(ElectronicShieldDoor CXX)
+cmake_minimum_required(VERSION 3.16)
+project(electronic-shield-door VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if(MSVC)
-    add_compile_options(/permissive-)
-endif()
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(OpenCV REQUIRED)
-find_package(Threads REQUIRED)
 
-add_executable(door_opener src/main.cpp)
+file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.hpp" "src/*.h")
 
-target_link_libraries(door_opener PRIVATE 
-    ${OpenCV_LIBS} 
-    Threads::Threads
-)
+add_executable(door_opener ${SRC_FILES})
 
-if(UNIX AND NOT APPLE)
+target_include_directories(door_opener PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(door_opener PRIVATE ${OpenCV_LIBS})
+
+if(WIN32)
+    install(TARGETS door_opener
+        RUNTIME DESTINATION .
+        RUNTIME_DEPENDENCIES_SET windows_dlls
+    )
+
+    install(RUNTIME_DEPENDENCY_SET windows_dlls
+        DESTINATION .
+    )
+    
+elseif(UNIX AND NOT APPLE)
     set_target_properties(door_opener PROPERTIES
-        INSTALL_RPATH "$ORIGIN/libs"
+        INSTALL_RPATH "\$ORIGIN/libs"
         BUILD_WITH_INSTALL_RPATH TRUE
         LINK_FLAGS "-Wl,-rpath-link,${CMAKE_CURRENT_BINARY_DIR}/libs"
     )
 
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/copy_libs.cmake" "
-        execute_process(COMMAND ldd \${BIN} OUTPUT_VARIABLE ldd_output)
-        string(REPLACE \"\\n\" \";\" lines \"\${ldd_output}\")
-        foreach(line \${lines})
-            if(line MATCHES \"=>[ \\t]+([^ ]+)\")
-                set(lib_path \"\${CMAKE_MATCH_1}\")
-                if(lib_path MATCHES \"libopencv\")
-                    get_filename_component(lib_name \"\${lib_path}\" NAME)
-                    get_filename_component(real_path \"\${lib_path}\" REALPATH)
-                    configure_file(\"\${real_path}\" \"\${LIBS_DIR}/\${lib_name}\" COPYONLY)
-                endif()
+    install(TARGETS door_opener DESTINATION .)
+
+    install(CODE "
+        file(GET_RUNTIME_DEPENDENCIES
+            EXECUTABLES \$<TARGET_FILE:door_opener>
+            RESOLVED_DEPENDENCIES_VAR resolved_deps
+            UNRESOLVED_DEPENDENCIES_VAR unresolved_deps
+        )
+        foreach(lib \${resolved_deps})
+            if(lib MATCHES \"libopencv\")
+                file(INSTALL \${lib} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/libs\")
             endif()
         endforeach()
     ")
-
-    add_custom_command(TARGET door_opener POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:door_opener>/libs"
-        COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:door_opener> -DLIBS_DIR=$<TARGET_FILE_DIR:door_opener>/libs -P "${CMAKE_CURRENT_BINARY_DIR}/copy_libs.cmake"
-    )
-endif()
-
-if(WIN32)
-    add_custom_command(TARGET door_opener POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy -t "$<TARGET_FILE_DIR:door_opener>" "$<TARGET_RUNTIME_DLLS:door_opener>"
-        COMMAND_EXPAND_LISTS
-    )
 endif()

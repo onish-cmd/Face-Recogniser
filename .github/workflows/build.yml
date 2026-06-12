@@ -46,12 +46,16 @@ jobs:
           fi
           cmake --build build --config Release
 
+      - name: Stage Artifacts (Install)
+        shell: bash
+        run: |
+          # Use CMake's native installation pattern to gather the binary and its dynamic dependencies
+          cmake --install build --prefix dist
+
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electronic-shield-door-${{ runner.os }}
-          path: |
-            build/Release/
-            build/door_opener
-            build/libs/
-          if-no-files-found: warn
+          name: electronic-shield-door-${{ matrix.os }}
+          # Points strictly to the clean staging directory, ensuring no broken relative paths
+          path: dist/
+          if-no-files-found: error

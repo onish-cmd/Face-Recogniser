@@ -1,5 +1,6 @@
 # Build directory
 build/
+dist/
 
 # CMake temporary files
 CMakeCache.txt
