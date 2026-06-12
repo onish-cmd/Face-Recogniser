@@ -36,6 +36,7 @@ jobs:
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
             # CMake automatically reads vcpkg.json and builds dependencies in Manifest Mode
+            mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
             MSYS_NO_PATHCONV=1 cmake -B build -S . \
               -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
