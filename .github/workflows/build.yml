@@ -19,15 +19,15 @@ jobs:
           sudo apt-get install -y libopencv-dev
 
       - name: Setup vcpkg
-        if: matrix.os == 'windows-latest'
-        uses: vcpkg/setup-vcpkg@v2
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-vcpkg@v2
         with:
-          cacheKey: 'vcpkg-${{ matrix.os }}'
+          cacheKey: "vcpkg-${{ matrix.os }}"
 
       - name: Configure and Build
         shell: bash
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if [ "${{ runner.os }}" == "Windows" ]; then
             MSYS_NO_PATHCONV=1 cmake -B build -S . \
               -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
@@ -40,7 +40,7 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: electronic-shield-door-${{ matrix.os }}
+          name: electronic-shield-door-${{ runner.os }}
           path: |
             build/Release/
             build/door_opener
