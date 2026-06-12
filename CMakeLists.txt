@@ -33,16 +33,16 @@ elseif(UNIX AND NOT APPLE)
 
     install(TARGETS door_opener DESTINATION .)
 
-    install(CODE "
-        file(GET_RUNTIME_DEPENDENCIES
-            EXECUTABLES \$<TARGET_FILE:door_opener>
-            RESOLVED_DEPENDENCIES_VAR resolved_deps
-            UNRESOLVED_DEPENDENCIES_VAR unresolved_deps
-        )
-        foreach(lib \${resolved_deps})
-            if(lib MATCHES \"libopencv\")
-                file(INSTALL \${lib} DESTINATION \"\${CMAKE_INSTALL_PREFIX}/libs\")
-            endif()
-        endforeach()
-    ")
+    foreach(lib ${OpenCV_LIBS})
+        if(TARGET ${lib})
+            get_target_property(lib_path ${lib} LOCATION)
+        else()
+            set(lib_path ${lib})
+        endif()
+
+        if(EXISTS "${lib_path}")
+            get_filename_component(real_path "${lib_path}" REALPATH)
+            install(FILES "${real_path}" DESTINATION libs)
+        endif()
+    endforeach()
 endif()
