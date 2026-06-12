@@ -23,7 +23,7 @@ if(WIN32)
     install(RUNTIME_DEPENDENCY_SET windows_dlls
         DESTINATION .
     )
-    
+
 elseif(UNIX AND NOT APPLE)
     set_target_properties(door_opener PROPERTIES
         INSTALL_RPATH "\$ORIGIN/libs"
@@ -41,8 +41,21 @@ elseif(UNIX AND NOT APPLE)
         endif()
 
         if(EXISTS "${lib_path}")
-            get_filename_component(real_path "${lib_path}" REALPATH)
-            install(FILES "${real_path}" DESTINATION libs)
+          get_filename_component(link_name "${lib_path}" NAME)
+
+          get_filename_component(real_path "${lib_path}" REALPATH)
+          get_filename_component(real_name "${real_path}" NAME)
+
+          install(FILES "${real_path}" DESTINATION libs)
+
+          if (NOT "${link_name}" STREQUAL "${real_name}")
+            install(CODE "
+              execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink \"${real_name}\" \"${link_name}\"
+                WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}/libs\"
+              )
+            ")
+          endif()
         endif()
     endforeach()
 endif()
