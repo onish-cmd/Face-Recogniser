@@ -20,7 +20,7 @@ jobs:
 
       - name: Setup vcpkg
         if: runner.os == 'Windows'
-        uses: microsoft/setup-vcpkg@v2
+        uses: johnwason/vcpkg-action@v1
         with:
           cacheKey: "vcpkg-${{ matrix.os }}"
 
