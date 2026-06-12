@@ -2,6 +2,10 @@ name: Build C++ Project
 
 on: [push, pull_request]
 
+env:
+  # Route vcpkg's binary cache to a local workspace folder for easy CI tracking
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg_cache
+
 jobs:
   build:
     strategy:
@@ -18,19 +22,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libopencv-dev
 
-      - name: Setup vcpkg
-        uses: johnwason/vcpkg-action@v1
+      - name: Cache vcpkg Binaries (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v4
         with:
-          pkgs: opencv
-          triplet: x64-windows
-          cache-key: vcpkg-windows
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ matrix.os }}-
 
       - name: Configure and Build
         shell: bash
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
+            # CMake automatically reads vcpkg.json and builds dependencies in Manifest Mode
             MSYS_NO_PATHCONV=1 cmake -B build -S . \
-              -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake" \
+              -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_FLAGS="/permissive-"
           else
