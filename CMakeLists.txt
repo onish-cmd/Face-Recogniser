@@ -22,6 +22,7 @@ if(UNIX AND NOT APPLE)
     set_target_properties(door_opener PROPERTIES
         INSTALL_RPATH "$ORIGIN/libs"
         BUILD_WITH_INSTALL_RPATH TRUE
+        LINK_FLAGS "-Wl,-rpath-link,${CMAKE_CURRENT_BINARY_DIR}/libs"
     )
 
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/copy_libs.cmake" "
