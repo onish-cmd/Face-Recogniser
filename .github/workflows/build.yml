@@ -12,44 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Native Linux Dependencies
+      - name: Install Linux Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libopencv-dev
 
-      - name: Export GitHub Actions Cache Parameters
-        uses: actions/github-script@v7
+      - name: Setup vcpkg
+        if: matrix.os == 'windows-latest'
+        uses: vcpkg/setup-vcpkg@v2
         with:
-          script: |
-            core.exportVariable('VCPKG_BINARY_SOURCES', 'clear;x-gha,readwrite');
-            
+          cacheKey: 'vcpkg-${{ matrix.os }}'
+
       - name: Configure and Build
         shell: bash
-        env:
-          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || env.ACTIONS_CACHE_URL }}
-          ACTIONS_RUNTIME_TOKEN: ${{ secrets.ACTIONS_RUNTIME_TOKEN || env.ACTIONS_RUNTIME_TOKEN }}
-          # Force vcpkg to ONLY build Release binaries to save time
-          VCPKG_BUILD_TYPE: release
         run: |
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
-             MSYS_NO_PATHCONV=1 cmake -B build -S . \
-               -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
-               -DCMAKE_BUILD_TYPE=Release \
-               -DCMAKE_CXX_FLAGS="-permissive-"
+            MSYS_NO_PATHCONV=1 cmake -B build -S . \
+              -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_FLAGS="/permissive-"
           else
-             cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+            cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
           fi
           cmake --build build --config Release
-          
+
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: electronic-shield-door-${{ matrix.os }}
-
           path: |
             build/Release/
             build/door_opener
             build/libs/
           if-no-files-found: warn
-          
