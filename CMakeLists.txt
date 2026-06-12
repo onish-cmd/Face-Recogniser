@@ -41,21 +41,16 @@ elseif(UNIX AND NOT APPLE)
         endif()
 
         if(EXISTS "${lib_path}")
-          get_filename_component(link_name "${lib_path}" NAME)
+            get_filename_component(link_name "${lib_path}" NAME)
+            
+            get_filename_component(real_path "${lib_path}" REALPATH)
+            get_filename_component(real_name "${real_path}" NAME)
 
-          get_filename_component(real_path "${lib_path}" REALPATH)
-          get_filename_component(real_name "${real_path}" NAME)
+            install(FILES "${real_path}" DESTINATION libs)
 
-          install(FILES "${real_path}" DESTINATION libs)
-
-          if (NOT "${link_name}" STREQUAL "${real_name}")
-            install(CODE "
-              execute_process(
-                COMMAND ${CMAKE_COMMAND} -E create_symlink \"${real_name}\" \"${link_name}\"
-                WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}/libs\"
-              )
-            ")
-          endif()
+            if(NOT "${link_name}" STREQUAL "${real_name}")
+                install(FILES "${real_path}" DESTINATION libs RENAME "${link_name}")
+            endif()
         endif()
     endforeach()
 endif()
