@@ -18,31 +18,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libopencv-dev
 
+      - name: Install Windows Dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install opencv -y --version=4.10.0
+          echo "OPENCV_DIR=C:\tools\opencv\build" >> $GITHUB_ENV
+          echo "C:\tools\opencv\build\x64\vc16\bin" >> $GITHUB_PATH
+        shell: bash
+
       - name: Setup XMake
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
 
-      - name: Cache XMake Packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.xmake
-            ${{ github.workspace }}/.xmake
-          key: xmake-${{ matrix.os }}-${{ hashFiles('xmake.lua') }}
-          restore-keys: |
-            xmake-${{ matrix.os }}-
-
-      - name: Initialize XMake Repository
+      - name: Force GitHub Package Mirror
         run: |
           xmake repo --clear
           xmake repo --add xmake-repo https://github.com/xmake-io/xmake-repo.git
           xmake repo --update
 
+      - name: Configure Global Paths
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            xmake g --pkg_searchdirs="C:\tools\opencv\build"
+          fi
+        shell: bash
+
       - name: Compile Source Code
         run: xmake -y
 
-      - name: Stage Artifacts (Flatten into dist)
+      - name: Stage Artifacts
         run: xmake install -y -o dist
 
       - name: Upload Build Artifacts
