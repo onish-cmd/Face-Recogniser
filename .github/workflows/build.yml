@@ -2,10 +2,6 @@ name: Build C++ Project
 
 on: [push, pull_request]
 
-env:
-  # Route vcpkg's binary cache to a local workspace folder for easy CI tracking
-  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg_cache
-
 jobs:
   build:
     strategy:
@@ -22,40 +18,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libopencv-dev
 
-      - name: Cache vcpkg Binaries (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Setup XMake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Cache XMake Packages
         uses: actions/cache@v4
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+          path: |
+            ~/.xmake
+            ${{ github.workspace }}/.xmake
+          key: xmake-${{ matrix.os }}-${{ hashFiles('xmake.lua') }}
           restore-keys: |
-            vcpkg-${{ matrix.os }}-
+            xmake-${{ matrix.os }}-
 
-      - name: Configure and Build
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            # CMake automatically reads vcpkg.json and builds dependencies in Manifest Mode
-            mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-            MSYS_NO_PATHCONV=1 cmake -B build -S . \
-              -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_CXX_FLAGS="/permissive-"
-          else
-            cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-          fi
-          cmake --build build --config Release
+      - name: Compile Source Code
+        run: xmake -j$(nproc 2>/dev/null || echo %NUMBER_OF_PROCESSORS%)
 
-      - name: Stage Artifacts (Install)
-        shell: bash
-        run: |
-          # Use CMake's native installation pattern to gather the binary and its dynamic dependencies
-          cmake --install build --prefix dist
+      - name: Stage Artifacts (Flatten into dist)
+        run: xmake install -o dist
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: electronic-shield-door-${{ matrix.os }}
-          # Points strictly to the clean staging directory, ensuring no broken relative paths
           path: dist/
           if-no-files-found: error
