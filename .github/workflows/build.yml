@@ -34,7 +34,10 @@ jobs:
             xmake-${{ matrix.os }}-
 
       - name: Initialize XMake Repository
-        run: xmake g --repo=github
+        run: |
+          xmake repo --clear
+          xmake repo --add xmake-repo https://github.com/xmake-io/xmake-repo.git
+          xmake repo --update
 
       - name: Compile Source Code
         run: xmake -y --network=skip
