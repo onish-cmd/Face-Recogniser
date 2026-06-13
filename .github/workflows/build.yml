@@ -40,7 +40,7 @@ jobs:
           xmake repo --update
 
       - name: Compile Source Code
-        run: xmake -y --network=skip
+        run: xmake -y
 
       - name: Stage Artifacts (Flatten into dist)
         run: xmake install -y -o dist
