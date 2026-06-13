@@ -34,10 +34,10 @@ jobs:
             xmake-${{ matrix.os }}-
 
       - name: Compile Source Code
-        run: xmake -j$(nproc 2>/dev/null || echo %NUMBER_OF_PROCESSORS%)
+        run: xmake -y
 
       - name: Stage Artifacts (Flatten into dist)
-        run: xmake install -o dist
+        run: xmake install -y -o dist
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
