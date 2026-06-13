@@ -33,8 +33,11 @@ jobs:
           restore-keys: |
             xmake-${{ matrix.os }}-
 
+      - name: Initialize XMake Repository
+        run: xmake repo --update --github
+
       - name: Compile Source Code
-        run: xmake -y
+        run: xmake -y --network=skip
 
       - name: Stage Artifacts (Flatten into dist)
         run: xmake install -y -o dist
