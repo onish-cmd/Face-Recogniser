@@ -21,7 +21,7 @@ jobs:
       - name: Install Windows Dependencies
         if: matrix.os == 'windows-latest'
         run: |
-          choco install opencv -y --version=4.10.0
+          choco install opencv -y
           echo "OPENCV_DIR=C:\tools\opencv\build" >> $GITHUB_ENV
           echo "C:\tools\opencv\build\x64\vc16\bin" >> $GITHUB_PATH
         shell: bash
